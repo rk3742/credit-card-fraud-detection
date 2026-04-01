@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credit Card Fraud Detector</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0a0a0f;
+            color: white;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #0d0d1a, #1a0a2e);
+            border-bottom: 1px solid rgba(99,102,241,0.3);
+            padding: 20px 40px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .header h1 {
+            font-size: 1.5rem;
+            background: linear-gradient(90deg, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .badge {
+            background: rgba(99,102,241,0.2);
+            border: 1px solid rgba(99,102,241,0.4);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: #818cf8;
+        }
+        .main { padding: 40px; max-width: 1100px; margin: 0 auto; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            background: linear-gradient(90deg, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .stat-label { color: rgba(255,255,255,0.5); font-size: 0.85rem; margin-top: 4px; }
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        .card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 24px;
+        }
+        .card h2 {
+            font-size: 1rem;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 12px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+        }
+        .btn:hover { opacity: 0.85; transform: translateY(-1px); }
+        .result-box {
+            margin-top: 16px;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            display: none;
+        }
+        .result-legitimate {
+            background: rgba(34,197,94,0.1);
+            border: 1px solid rgba(34,197,94,0.3);
+        }
+        .result-fraud {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { border-color: rgba(239,68,68,0.3); }
+            50% { border-color: rgba(239,68,68,0.8); }
+        }
+        .result-icon { font-size: 2.5rem; margin-bottom: 8px; }
+        .result-title { font-size: 1.3rem; font-weight: bold; margin-bottom: 4px; }
+        .result-prob { font-size: 0.9rem; color: rgba(255,255,255,0.6); }
+        .transaction-feed {
+            max-height: 320px;
+            overflow-y: auto;
+        }
+        .transaction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .tx-amount { font-weight: bold; font-size: 0.95rem; }
+        .tx-badge {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .tx-legitimate { background: rgba(34,197,94,0.2); color: #4ade80; }
+        .tx-fraud { background: rgba(239,68,68,0.2); color: #f87171; }
+        .tx-info { font-size: 0.78rem; color: rgba(255,255,255,0.4); }
+        .loading { text-align: center; color: rgba(255,255,255,0.4); padding: 20px; }
+        .meter-wrap { margin-top: 12px; }
+        .meter-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 6px;
+        }
+        .meter-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .meter-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+            background: linear-gradient(90deg, #22c55e, #ef4444);
+        }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span style="font-size:1.5rem">🛡️</span>
+        <h1>FraudShield AI</h1>
+        <span class="badge">99.95% Accuracy</span>
+        <span class="badge">Random Forest + SMOTE</span>
+    </div>
+
+    <div class="main">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">284K+</div>
+                <div class="stat-label">Transactions Trained On</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">99.95%</div>
+                <div class="stat-label">Model Accuracy</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">0.84</div>
+                <div class="stat-label">Fraud F1-Score</div>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <!-- Simulate Panel -->
+            <div class="card">
+                <h2>⚡ Live Transaction Simulator</h2>
+                <button class="btn btn-primary" onclick="simulateTransaction()">
+                    🎲 Simulate Random Transaction
+                </button>
+                <button class="btn btn-secondary" id="analyzeBtn" onclick="analyzeTransaction()" disabled>
+                    🔍 Analyze This Transaction
+                </button>
+
+                <div id="txDetails" style="display:none; margin-top:16px;">
+                    <div style="background:rgba(255,255,255,0.03); border-radius:10px; padding:14px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                            <span style="color:rgba(255,255,255,0.5); font-size:0.85rem;">Amount</span>
+                            <span id="txAmount" style="font-weight:bold;"></span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span style="color:rgba(255,255,255,0.5); font-size:0.85rem;">Actual Label</span>
+                            <span id="txActual" style="font-weight:bold;"></span>
+                        </div>
+                    </div>
+                    <div class="meter-wrap">
+                        <div class="meter-label">
+                            <span>Risk Score</span>
+                            <span id="meterVal">0%</span>
+                        </div>
+                        <div class="meter-bar">
+                            <div class="meter-fill" id="meterFill" style="width:0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="resultBox" class="result-box">
+                    <div class="result-icon" id="resultIcon"></div>
+                    <div class="result-title" id="resultTitle"></div>
+                    <div class="result-prob" id="resultProb"></div>
+                </div>
+            </div>
+
+            <!-- Transaction Feed -->
+            <div class="card">
+                <h2>📊 Transaction Feed</h2>
+                <div class="transaction-feed" id="txFeed">
+                    <div class="loading">Click simulate to start analyzing transactions...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTx = null;
+        let txCount = 0;
+
+        async function simulateTransaction() {
+            const btn = document.querySelector('.btn-primary');
+            btn.textContent = '⏳ Loading...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/simulate');
+                currentTx = await res.json();
+
+                document.getElementById('txAmount').textContent = `$${currentTx.amount.toFixed(2)}`;
+                document.getElementById('txActual').textContent = currentTx.actual === 1 ? '🔴 Fraud' : '🟢 Legitimate';
+                document.getElementById('txDetails').style.display = 'block';
+                document.getElementById('resultBox').style.display = 'none';
+                document.getElementById('meterFill').style.width = '0%';
+                document.getElementById('meterVal').textContent = '0%';
+                document.getElementById('analyzeBtn').disabled = false;
+            } catch(e) {
+                alert('Error loading transaction');
+            }
+
+            btn.textContent = '🎲 Simulate Random Transaction';
+            btn.disabled = false;
+        }
+
+        async function analyzeTransaction() {
+            if (!currentTx) return;
+            const btn = document.getElementById('analyzeBtn');
+            btn.textContent = '⏳ Analyzing...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(currentTx)
+                });
+                const data = await res.json();
+
+                const resultBox = document.getElementById('resultBox');
+                resultBox.style.display = 'block';
+                resultBox.className = 'result-box ' + (data.prediction === 1 ? 'result-fraud' : 'result-legitimate');
+
+                document.getElementById('resultIcon').textContent = data.prediction === 1 ? '🚨' : '✅';
+                document.getElementById('resultTitle').textContent = data.status;
+                document.getElementById('resultTitle').style.color = data.prediction === 1 ? '#f87171' : '#4ade80';
+                document.getElementById('resultProb').textContent = `Fraud Probability: ${data.probability}%`;
+                document.getElementById('meterFill').style.width = `${data.probability}%`;
+                document.getElementById('meterVal').textContent = `${data.probability}%`;
+
+                addToFeed(currentTx.amount, data);
+            } catch(e) {
+                alert('Prediction error');
+            }
+
+            btn.textContent = '🔍 Analyze This Transaction';
+            btn.disabled = false;
+        }
+
+        function addToFeed(amount, data) {
+            const feed = document.getElementById('txFeed');
+            if (txCount === 0) feed.innerHTML = '';
+            txCount++;
+
+            const item = document.createElement('div');
+            item.className = 'transaction-item';
+            item.innerHTML = `
+                <div>
+                    <div class="tx-amount">$${amount.toFixed(2)}</div>
+                    <div class="tx-info">TX #${txCount} • ${new Date().toLocaleTimeString()}</div>
+                </div>
+                <span class="tx-badge ${data.prediction === 1 ? 'tx-fraud' : 'tx-legitimate'}">
+                    ${data.status}
+                </span>
+            `;
+            feed.prepend(item);
+        }
+    </script>
+</body>
+</html>
