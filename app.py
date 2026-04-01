@@ -10,21 +10,24 @@ import gdown
 if not os.path.exists('model.pkl'):
     print("Downloading model from Google Drive...")
     gdown.download(
-        'https://drive.google.com/uc?id=1k1Iwhqovki7QJLMSp0T4-ArjcnGuIZXw',
-        'model.pkl',
-        quiet=False
+        id='1k1Iwhqovki7QJLMSp0T4-ArjcnGuIZXw',
+        output='model.pkl',
+        quiet=False,
+        fuzzy=True
     )
     print("Model downloaded! ✅")
 
-# Auto download scaler if not present
 if not os.path.exists('scaler.pkl'):
     print("Downloading scaler from Google Drive...")
     gdown.download(
-        'https://drive.google.com/uc?id=1rbeqZJhRlZNPGWt-urQ0kYqrIRLX9HyD',
-        'scaler.pkl',
-        quiet=False
+        id='1rbeqZJhRlZNPGWt-urQ0kYqrIRLX9HyD',
+        output='scaler.pkl',
+        quiet=False,
+        fuzzy=True
     )
     print("Scaler downloaded! ✅")
+
+
 
 app = Flask(__name__)
 model = pickle.load(open('model.pkl', 'rb'))
