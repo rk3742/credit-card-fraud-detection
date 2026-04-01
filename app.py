@@ -3,10 +3,36 @@ import pickle
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
+import os
+import gdown
+
+# Auto download model if not present
+if not os.path.exists('model.pkl'):
+    print("Downloading model from Google Drive...")
+    gdown.download(
+        'https://drive.google.com/uc?id=1k1Iwhqovki7QJLMSp0T4-ArjcnGuIZXw',
+        'model.pkl',
+        quiet=False
+    )
+    print("Model downloaded! ✅")
+
+# Auto download scaler if not present
+if not os.path.exists('scaler.pkl'):
+    print("Downloading scaler from Google Drive...")
+    gdown.download(
+        'https://drive.google.com/uc?id=1rbeqZJhRlZNPGWt-urQ0kYqrIRLX9HyD',
+        'scaler.pkl',
+        quiet=False
+    )
+    print("Scaler downloaded! ✅")
 
 app = Flask(__name__)
 model = pickle.load(open('model.pkl', 'rb'))
 scaler = pickle.load(open('scaler.pkl', 'rb'))
+
+# Load a sample of dataset for simulation
+print("Loading sample data for simulation...")
+df_sample = pd.read_csv('sample_data.csv')
 
 @app.route('/')
 def home():
@@ -37,9 +63,7 @@ def predict():
 
 @app.route('/simulate', methods=['GET'])
 def simulate():
-    import pandas as pd
-    df = pd.read_csv('creditcard.csv')
-    sample = df.sample(1).iloc[0]
+    sample = df_sample.sample(1).iloc[0]
     result = {
         'time': float(sample['Time']),
         'amount': float(sample['Amount']),
